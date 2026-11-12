@@ -1,0 +1,30 @@
+@api = http://localhost:5080
+
+### Pares de idiomas disponibles
+GET {{api}}/api/languages
+
+### Historial
+GET {{api}}/api/translation/history?take=20
+
+### Traducción con un frame inválido (debe responder 400)
+POST {{api}}/api/translation
+Content-Type: application/json
+
+{
+  "source": "LSM",
+  "target": "SpanishText",
+  "frames": [ [ [0.1, 0.2, 0.3] ] ]
+}
+
+### Par no soportado (debe responder 400)
+POST {{api}}/api/translation
+Content-Type: application/json
+
+{
+  "source": "SpanishText",
+  "target": "LSM",
+  "frames": [ [ [0.1, 0.2, 0.3] ] ]
+}
+
+### Para probar una traducción completa usa el frontend (botón "Iniciar"),
+### que genera los 75 puntos × 30 frames automáticamente.

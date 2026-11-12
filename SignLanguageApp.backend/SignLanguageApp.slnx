@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="SignLanguageApp.API/SignLanguageApp.API.csproj" />
+  <Project Path="SignLanguageApp.Application/SignLanguageApp.Application.csproj" />
+  <Project Path="SignLanguageApp.Domain/SignLanguageApp.Domain.csproj" />
+  <Project Path="SignLanguageApp.Infrastructure/SignLanguageApp.Infrastructure.csproj" />
+  <Project Path="SignLanguageApp.Tests/SignLanguageApp.Tests.csproj" />
+</Solution>
