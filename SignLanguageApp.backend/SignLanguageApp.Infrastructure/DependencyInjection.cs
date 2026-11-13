@@ -1,11 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SignLanguageApp.Application.Interfaces;
-using SignLanguageApp.Infrastructure.ModelClients;
-using SignLanguageApp.Infrastructure.ModelRegistry;
+using SignLanguageApp.Application.Abstractions;
 using SignLanguageApp.Infrastructure.Persistence;
 using SignLanguageApp.Infrastructure.Persistence.Repositories;
+using SignLanguageApp.Infrastructure.Security;
 
 namespace SignLanguageApp.Infrastructure;
 
@@ -13,30 +12,22 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // ---------- Base de datos ----------
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Falta ConnectionStrings:Default en appsettings.");
 
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
-        services.AddScoped<ITranslationRepository, TranslationRepository>();
+        services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ICatalogRepository, CatalogRepository>();
+        services.AddScoped<IConsultationRepository, ConsultationRepository>();
 
-        // ---------- Clientes de ml-service ----------
-        var ml = configuration.GetSection(MlServiceOptions.SectionName).Get<MlServiceOptions>() ?? new MlServiceOptions();
-
-        void ConfigureClient(HttpClient client)
-        {
-            client.BaseAddress = new Uri(ml.BaseUrl.TrimEnd('/') + "/");
-            client.Timeout = TimeSpan.FromSeconds(ml.TimeoutSeconds);
-        }
-
-        services.AddHttpClient<LsmToTextModelClient>(ConfigureClient);
-        services.AddHttpClient<LsmToLsuModelClient>(ConfigureClient);
-
-        // Cada cliente se registra también como ITranslationModel para que la factory los reciba todos
-        services.AddTransient<ITranslationModel>(sp => sp.GetRequiredService<LsmToTextModelClient>());
-        services.AddTransient<ITranslationModel>(sp => sp.GetRequiredService<LsmToLsuModelClient>());
-
-        services.AddScoped<ITranslationModelFactory, TranslationModelFactory>();
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .Validate(o => o.Key.Length >= 32, "Jwt:Key debe tener al menos 32 caracteres.")
+            .ValidateOnStart();
+        services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddSingleton<IPasswordHasher, PasswordHasherAdapter>();
+        services.AddScoped<DevelopmentSeeder>();
 
         return services;
     }

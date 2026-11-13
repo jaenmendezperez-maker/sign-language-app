@@ -1,0 +1,42 @@
+<section class="card">
+  <h1>Vocabulario soportado</h1>
+  <p class="muted">Señas de LSM que SignLink puede reconocer, agrupadas por categoría.</p>
+
+  <div class="chips" role="radiogroup" aria-label="Filtrar por categoría">
+    <button type="button" role="radio" class="chip" [class.active]="selected() === null" [attr.aria-checked]="selected() === null" (click)="selected.set(null)">
+      Todas ({{ signs().length }})
+    </button>
+    @for (c of categories(); track c.id) {
+      <button type="button" role="radio" class="chip" [class.active]="selected() === c.id" [attr.aria-checked]="selected() === c.id" (click)="selected.set(c.id)">
+        {{ c.name }}
+      </button>
+    }
+  </div>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  @if (loading()) {
+    <p class="muted">Cargando…</p>
+  } @else {
+    <ul class="sign-grid">
+      @for (s of visible(); track s.id) {
+        <li class="sign-card">
+          @if (s.visualUrl && isImage(s.visualUrl)) {
+            <img [src]="s.visualUrl" [alt]="'Referencia visual de la seña ' + s.word" loading="lazy" />
+          } @else if (s.references.length) {
+            <app-hand-sketch [landmarks]="s.references[0].normalizedLandmarks" [label]="'Dibujo de la mano para la seña ' + s.word" />
+          }
+          <strong class="sign-word">{{ s.word }}</strong>
+          <span class="muted">{{ s.categoryName }} · {{ s.handCount === 2 ? 'dos manos' : 'una mano' }}</span>
+          @if (s.visualUrl && !isImage(s.visualUrl)) {
+            <a [href]="s.visualUrl" target="_blank" rel="noopener">Ver video de referencia</a>
+          }
+        </li>
+      } @empty {
+        <li class="muted">No hay señas en esta categoría.</li>
+      }
+    </ul>
+  }
+</section>

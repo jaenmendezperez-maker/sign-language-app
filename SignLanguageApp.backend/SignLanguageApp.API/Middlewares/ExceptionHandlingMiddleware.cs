@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using SignLanguageApp.Application.Validators;
+using SignLanguageApp.Application.Errors;
 using SignLanguageApp.Domain.Exceptions;
 
 namespace SignLanguageApp.API.Middlewares;
@@ -17,14 +17,14 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         {
             // El cliente cerró la conexión; no hay a quién responder.
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!context.Response.HasStarted)
         {
             var (status, title) = ex switch
             {
                 RequestValidationException => (StatusCodes.Status400BadRequest, "Petición inválida"),
-                UnsupportedLanguagePairException => (StatusCodes.Status400BadRequest, "Par de idiomas no soportado"),
-                HttpRequestException => (StatusCodes.Status503ServiceUnavailable, "Servicio de modelos no disponible"),
-                TaskCanceledException => (StatusCodes.Status503ServiceUnavailable, "El servicio de modelos tardó demasiado"),
+                InvalidCredentialsException or UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "No autorizado"),
+                NotFoundException => (StatusCodes.Status404NotFound, "No encontrado"),
+                DomainException => (StatusCodes.Status409Conflict, "Operación no permitida"),
                 _ => (StatusCodes.Status500InternalServerError, "Error interno"),
             };
 

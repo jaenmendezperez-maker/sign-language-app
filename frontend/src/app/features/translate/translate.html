@@ -1,0 +1,167 @@
+<section class="toolbar card" aria-label="Control de la consulta">
+  <span class="session-state" [attr.data-state]="state()" role="status">Consulta: {{ stateLabel() }}</span>
+
+  <div class="actions">
+    @switch (state()) {
+      @case ('idle') {
+        <button type="button" class="primary" (click)="start()" [disabled]="!catalogLoaded()">Iniciar</button>
+      }
+      @case ('starting') {
+        <button type="button" class="primary" disabled>Iniciando…</button>
+      }
+      @case ('active') {
+        <button type="button" (click)="pause()" [disabled]="busy()">Pausar</button>
+        <button type="button" class="danger" (click)="confirmingFinish.set(true)" [disabled]="busy()">Finalizar</button>
+      }
+      @case ('paused') {
+        <button type="button" class="primary" (click)="resume()" [disabled]="busy()">Reanudar</button>
+        <button type="button" class="danger" (click)="confirmingFinish.set(true)" [disabled]="busy()">Finalizar</button>
+      }
+      @case ('finished') {
+        <button type="button" class="primary" (click)="newConsultation()">Nueva consulta</button>
+      }
+    }
+  </div>
+
+  @if (speech.supported) {
+    <label class="switch">
+      <input type="checkbox" [checked]="speech.enabled()" (change)="speech.toggle()" />
+      Leer en voz alta
+    </label>
+  } @else {
+    <span class="muted">Este navegador no permite leer en voz alta.</span>
+  }
+</section>
+
+@if (confirmingFinish()) {
+  <div class="card confirm-card" role="alertdialog" aria-labelledby="finish-title">
+    <p id="finish-title">¿Finalizar la consulta? Se liberará la cámara y las palabras pendientes quedarán como no confirmadas.</p>
+    <div class="actions">
+      <button type="button" class="danger" (click)="finish()">Sí, finalizar</button>
+      <button type="button" (click)="confirmingFinish.set(false)">Cancelar</button>
+    </div>
+  </div>
+}
+
+@if (error(); as message) {
+  <p class="card error-card" role="alert">{{ message }}</p>
+}
+
+@if (catalogLoaded() && catalog().length === 0) {
+  <p class="card notice">
+    Todavía no hay señas registradas, así que ninguna se podrá reconocer. Un administrador debe registrarlas en
+    <strong>Registrar seña</strong>. Puedes ver el catálogo en <a routerLink="/vocabulario">Vocabulario</a>.
+  </p>
+}
+
+@if (state() === 'finished') {
+  <section class="card export-card" aria-labelledby="export-title">
+    <h2 id="export-title">Exportar resumen de la consulta</h2>
+    <p class="muted">Incluye fecha, hora de inicio y fin, y las palabras con su nivel de certeza. No incluye video ni imágenes.</p>
+    <div class="actions">
+      <button type="button" class="primary" (click)="download()" [disabled]="busy()">Descargar .txt</button>
+      <button type="button" (click)="copy()" [disabled]="busy()">Copiar al portapapeles</button>
+    </div>
+    @if (exportMessage(); as m) {
+      <p class="ok" role="status">{{ m }}</p>
+    }
+  </section>
+}
+
+<div class="workspace">
+  <app-camera-view (frame)="onFrame($event)">
+    @if (state() === 'active') {
+      <div class="live-preview" aria-hidden="true">
+        @if (preview(); as p) {
+          Viendo: <strong>{{ p.word ?? '—' }}</strong> {{ p.score | score }}
+        } @else {
+          Muestra la mano y mantén la seña quieta medio segundo
+        }
+      </div>
+    }
+    @if (noHands()) {
+      <div class="overlay-message warn" role="alert">
+        <span class="overlay-icon" aria-hidden="true">✋</span>
+        No se detectan manos, acérquese a la cámara
+      </div>
+    } @else if (repeat()) {
+      <div class="overlay-message danger" role="alert">
+        <span class="overlay-icon" aria-hidden="true">↻</span>
+        Por favor repita la seña
+      </div>
+    }
+  </app-camera-view>
+
+  <section class="card panel" aria-labelledby="translation-title">
+    <h2 id="translation-title">Traducción</h2>
+
+    <div class="live" aria-live="polite">
+      @if (live(); as l) {
+        @if (l.word) {
+          <p class="translation-text">{{ l.word }}</p>
+        } @else {
+          <p class="translation-text muted">—</p>
+        }
+        <div class="meta">
+          <app-certainty-badge [level]="l.level" />
+          <span class="muted">Similitud {{ l.score | score }}</span>
+        </div>
+
+        @if (l.record?.status === 'Pending') {
+          <div class="confirm-box">
+            <span>¿Es correcta la palabra «{{ l.word }}»?</span>
+            <div class="actions">
+              <button type="button" class="primary" (click)="confirm(l.record!)">Confirmar</button>
+              <button type="button" (click)="discard(l.record!)">Descartar</button>
+            </div>
+            <span class="muted">Se marcará como no confirmada en {{ countdown()[l.record!.id] ?? 0 }} s</span>
+          </div>
+        } @else if (l.level === 'Medium' && !l.record) {
+          <p class="muted">Guardando…</p>
+        }
+      } @else {
+        <p class="muted">Aquí aparecerá la palabra cuando el paciente complete una seña frente a la cámara.</p>
+      }
+    </div>
+
+    <div class="phrase">
+      <h3>Frase</h3>
+      <p>{{ phrase() || '—' }}</p>
+    </div>
+
+    <div class="history-header">
+      <h3>Historial de la consulta</h3>
+      @if (consultation() && records().length > 0) {
+        <button type="button" class="small" (click)="confirmingClear.set(true)" [disabled]="busy()">Limpiar historial</button>
+      }
+    </div>
+    @if (confirmingClear()) {
+      <div class="confirm-inline" role="alertdialog">
+        <span>¿Borrar todo el historial de esta consulta?</span>
+        <button type="button" class="danger small" (click)="clearHistory()">Borrar</button>
+        <button type="button" class="small" (click)="confirmingClear.set(false)">Cancelar</button>
+      </div>
+    }
+    <ol class="history" #historyList>
+      @for (r of records(); track r.id) {
+        <li [class.discarded]="r.status === 'Discarded'">
+          <span class="time">{{ r.recognizedAt | date: 'HH:mm:ss' }}</span>
+          <span class="word">{{ r.word ?? 'Seña no reconocida' }}</span>
+          <span class="score">{{ r.similarityScore | score }}</span>
+          <app-certainty-badge [level]="r.certaintyLevel" />
+          @if (statusLabels[r.status]; as s) {
+            <span class="status">{{ s }}</span>
+          }
+          @if (r.status === 'Pending') {
+            <span class="row-actions">
+              <button type="button" class="small primary" (click)="confirm(r)">Confirmar</button>
+              <button type="button" class="small" (click)="discard(r)">Descartar</button>
+            </span>
+          }
+        </li>
+      } @empty {
+        <li class="muted empty">Sin entradas.</li>
+      }
+    </ol>
+  </section>
+</div>

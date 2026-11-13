@@ -1,0 +1,67 @@
+<section class="card">
+  <h1>Mis consultas</h1>
+
+  @if (error(); as m) {
+    <p class="error" role="alert">{{ m }}</p>
+  }
+  @if (message(); as m) {
+    <p class="ok" role="status">{{ m }}</p>
+  }
+
+  @if (loading()) {
+    <p class="muted">Cargando…</p>
+  } @else if (items().length === 0) {
+    <p class="muted">Todavía no tienes consultas.</p>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Inicio</th>
+            <th scope="col">Fin</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="num">Palabras</th>
+            <th scope="col"><span class="visually-hidden">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of items(); track c.id) {
+            <tr>
+              <td>{{ c.startedAt | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ c.startedAt | date: 'HH:mm' }}</td>
+              <td>{{ c.endedAt ? (c.endedAt | date: 'HH:mm') : '—' }}</td>
+              <td>{{ statusLabel[c.status] }}</td>
+              <td class="num">{{ c.wordCount }}</td>
+              <td class="row-actions">
+                <button type="button" class="small" (click)="open(c.id)" [attr.aria-expanded]="selected()?.id === c.id">
+                  {{ selected()?.id === c.id ? 'Ocultar' : 'Ver' }}
+                </button>
+                <button type="button" class="small" (click)="download(c)">Descargar .txt</button>
+                <button type="button" class="small" (click)="copy(c)">Copiar</button>
+              </td>
+            </tr>
+            @if (selected()?.id === c.id) {
+              <tr class="detail">
+                <td colspan="6">
+                  <ol class="history">
+                    @for (r of selected()!.records; track r.id) {
+                      <li>
+                        <span class="time">{{ r.recognizedAt | date: 'HH:mm:ss' }}</span>
+                        <span class="word">{{ r.word ?? 'Seña no reconocida' }}</span>
+                        <span class="score">{{ r.similarityScore | score }}</span>
+                        <app-certainty-badge [level]="r.certaintyLevel" />
+                      </li>
+                    } @empty {
+                      <li class="muted">Sin entradas.</li>
+                    }
+                  </ol>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

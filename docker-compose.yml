@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: senas_dev
       POSTGRES_DB: senas
     ports:
-      - "5432:5432"
+      - "5462:5432"   # 5462 en el equipo para no chocar con un PostgreSQL local
     volumes:
       - pgdata:/var/lib/postgresql/data
 

@@ -1,0 +1,30 @@
+<div class="camera">
+  @if (devices().length > 1) {
+    <label class="camera-select">
+      Cámara
+      <select [ngModel]="selectedId()" (ngModelChange)="selectDevice($event)" [disabled]="loading()">
+        <option value="">Predeterminada</option>
+        @for (d of devices(); track d.deviceId; let i = $index) {
+          <option [value]="d.deviceId">{{ d.label || 'Cámara ' + (i + 1) }}</option>
+        }
+      </select>
+    </label>
+  }
+
+  <div class="stage">
+    <!-- Video y dibujo en espejo para que la persona se vea como en un espejo; los puntos se calculan sobre el cuadro original -->
+    <video #video class="mirror" playsinline muted></video>
+    <canvas #canvas class="mirror overlay" aria-hidden="true"></canvas>
+    @if (!running()) {
+      <p class="stage-hint">{{ loading() ? 'Cargando cámara y MediaPipe…' : 'La cámara está apagada.' }}</p>
+    }
+    @if (running()) {
+      <span class="fps" [class.low]="fps() > 0 && fps() < 15" title="Cuadros procesados por segundo (RNF-02: mínimo 15)">{{ fps() }} fps</span>
+    }
+    <ng-content />
+  </div>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</div>

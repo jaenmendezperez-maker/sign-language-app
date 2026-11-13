@@ -19,19 +19,13 @@ coverage/
 # ---------- .NET ----------
 bin/
 obj/
+# dotnet-ef en Linux crea una carpeta llamada literalmente "bin\Debug"
+bin\\Debug/
 *.user
 *.suo
 .vs/
 TestResults/
 
-# ---------- Python ----------
-venv/
-.venv/
+# ---------- Python (scripts de docs/) ----------
 __pycache__/
 *.pyc
-.pytest_cache/
-.ipynb_checkpoints/
-
-# ---------- ML ----------
-ml-service/weights/
-ml-service/training/data/

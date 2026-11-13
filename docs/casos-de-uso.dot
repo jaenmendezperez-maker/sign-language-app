@@ -1,0 +1,39 @@
+digraph CasosDeUso {
+  graph [rankdir=LR, nodesep=0.25, ranksep=0.9, fontname="Helvetica", bgcolor="white", pad=0.3];
+  node [fontname="Helvetica", fontsize=11];
+  edge [color="#33414e", arrowhead=none, fontname="Helvetica", fontsize=9, fontcolor="#33414e"];
+  paciente [shape=none, image="actor.png", label="Paciente sordo", labelloc=b, height=1.25, width=1.5, imagepos=tc, fixedsize=true];
+  medico [shape=none, image="actor.png", label="Personal médico", labelloc=b, height=1.25, width=1.5, imagepos=tc, fixedsize=true];
+  admin [shape=none, image="actor.png", label="Administrador", labelloc=b, height=1.25, width=1.5, imagepos=tc, fixedsize=true];
+  subgraph cluster_sistema { label="SignLink"; labeljust=l; fontsize=14; fontcolor="#1F4E79"; style=rounded; color="#1F4E79"; penwidth=1.5;
+    CU01 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-01\nIniciar sesión"];
+    CU02 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-02\nIniciar consulta\nde traducción"];
+    CU03 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-03\nPausar / reanudar\nconsulta"];
+    CU04 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-04\nFinalizar consulta"];
+    CU05 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-05\nTraducir seña"];
+    CU06 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-06\nSolicitar repetición\nde seña"];
+    CU07 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-07\nConfirmar o descartar\npalabra"];
+    CU08 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-08\nEscuchar traducción\npor voz"];
+    CU09 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-09\nAvisar mano\nno detectada"];
+    CU10 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-10\nConsultar / limpiar\nhistorial"];
+    CU11 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-11\nExportar resumen"];
+    CU12 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-12\nConsultar vocabulario"];
+    CU13 [shape=ellipse, style=filled, fillcolor="#e6ecf5", color="#1F4E79", label="CU-13\nRegistrar referencia\ngeométrica"];
+  }
+  paciente -> CU05;
+  paciente -> CU12;
+  medico -> CU02;
+  medico -> CU03;
+  medico -> CU04;
+  medico -> CU05;
+  medico -> CU10;
+  medico -> CU12;
+  admin -> CU13;
+  CU05 -> CU06 [style=dashed, dir=back, arrowtail=vee, label="«extend»\n[certeza roja]"];
+  CU05 -> CU07 [style=dashed, dir=back, arrowtail=vee, label="«extend»\n[certeza amarilla]"];
+  CU05 -> CU08 [style=dashed, dir=back, arrowtail=vee, label="«extend»\n[voz activada]"];
+  CU05 -> CU09 [style=dashed, dir=back, arrowtail=vee, label="«extend»\n[> 3 s sin manos]"];
+  CU04 -> CU11 [style=dashed, dir=back, arrowtail=vee, label="«extend»\n[el médico lo pide]"];
+  CU13 -> CU01 [style=dashed, arrowhead=vee, label="«include»"];
+  CU02 -> CU01 [style=dashed, arrowhead=vee, label="«include»"];
+}

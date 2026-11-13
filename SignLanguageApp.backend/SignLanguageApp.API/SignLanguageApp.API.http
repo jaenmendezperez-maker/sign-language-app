@@ -1,30 +1,46 @@
-@api = http://localhost:5080
+@api = http://localhost:5090
 
-### Pares de idiomas disponibles
-GET {{api}}/api/languages
+### Umbrales del semáforo (RF-06)
+GET {{api}}/api/config/certainty
 
-### Historial
-GET {{api}}/api/translation/history?take=20
+### Categorías y catálogo (sin login)
+GET {{api}}/api/categories
 
-### Traducción con un frame inválido (debe responder 400)
-POST {{api}}/api/translation
+###
+GET {{api}}/api/catalog
+
+### Login como médico (usuarios de prueba en appsettings.Development.json)
+# @name medico
+POST {{api}}/api/auth/login
 Content-Type: application/json
 
-{
-  "source": "LSM",
-  "target": "SpanishText",
-  "frames": [ [ [0.1, 0.2, 0.3] ] ]
-}
+{ "email": "medico@signlink.local", "password": "Medico123!" }
 
-### Par no soportado (debe responder 400)
-POST {{api}}/api/translation
+### Iniciar consulta
+# @name consulta
+POST {{api}}/api/consultations
+Authorization: Bearer {{medico.response.body.token}}
+
+### Registrar una seña no reconocida (puntaje 40 → NotRecognized)
+POST {{api}}/api/consultations/{{consulta.response.body.id}}/records
+Authorization: Bearer {{medico.response.body.token}}
 Content-Type: application/json
 
-{
-  "source": "SpanishText",
-  "target": "LSM",
-  "frames": [ [ [0.1, 0.2, 0.3] ] ]
-}
+{ "signId": null, "similarityScore": 40 }
 
-### Para probar una traducción completa usa el frontend (botón "Iniciar"),
-### que genera los 75 puntos × 30 frames automáticamente.
+### Finalizar
+POST {{api}}/api/consultations/{{consulta.response.body.id}}/finish
+Authorization: Bearer {{medico.response.body.token}}
+
+### Resumen .txt
+GET {{api}}/api/consultations/{{consulta.response.body.id}}/summary
+Authorization: Bearer {{medico.response.body.token}}
+
+### El médico no puede registrar señas (debe responder 403)
+POST {{api}}/api/catalog/references
+Authorization: Bearer {{medico.response.body.token}}
+Content-Type: application/json
+
+{}
+
+### Para registrar señas usa el frontend (Administrador → Registrar seña): captura 5 muestras con la cámara.

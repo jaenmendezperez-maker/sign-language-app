@@ -1,0 +1,66 @@
+<section class="card">
+  <h1>Registrar seña</h1>
+  <p class="muted">
+    Se capturan {{ required }} muestras de la seña con la cámara y se guarda el promedio de sus distancias y ángulos. No se guardan imágenes.
+    Si la palabra ya existe, la captura se agrega como una variante.
+  </p>
+
+  <div class="register-layout">
+    <form class="form" (ngSubmit)="startCapture()">
+      <label>
+        Palabra
+        <input name="word" [(ngModel)]="word" maxlength="60" required [disabled]="state() !== 'idle'" placeholder="por ejemplo: dolor" />
+      </label>
+      <label>
+        Categoría
+        <select name="category" [(ngModel)]="categoryId" required [disabled]="state() !== 'idle'">
+          <option [ngValue]="null" disabled>Elige una categoría</option>
+          @for (c of categories(); track c.id) {
+            <option [ngValue]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Imagen o video de referencia (opcional)
+        <input name="visualUrl" type="url" [(ngModel)]="visualUrl" maxlength="500" [disabled]="state() !== 'idle'" placeholder="https://…" />
+      </label>
+
+      @if (state() === 'idle') {
+        <div class="actions">
+          <button type="submit" class="primary">Capturar {{ required }} muestras</button>
+          <button type="button" (click)="toggleCamera()">{{ cameraOn() ? 'Apagar cámara' : 'Encender cámara para practicar' }}</button>
+        </div>
+        @if (cameraOn()) {
+          <p class="muted" role="status">Manos detectadas: {{ handsInView() }}</p>
+        }
+      } @else {
+        <button type="button" (click)="cancel()" [disabled]="state() === 'saving'">Cancelar</button>
+      }
+
+      @if (state() === 'capturing') {
+        <div class="capture-progress" role="status">
+          <progress [value]="samples().length" [max]="required"></progress>
+          <span>Muestra {{ samples().length }} de {{ required }}</span>
+          <p class="muted">
+            Haz la seña y mantenla quieta hasta que avance el contador. Después baja o mueve la mano y repítela.
+            Manos detectadas: {{ handsInView() }}.
+          </p>
+        </div>
+      }
+      @if (state() === 'saving') {
+        <p role="status">Guardando…</p>
+      }
+      @if (error(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+      @if (saved(); as s) {
+        <div class="ok" role="status">
+          <p>Se guardó la seña «{{ s.word }}» ({{ s.categoryName }}) con {{ s.references.length }} referencia(s). Ya aparece en el catálogo.</p>
+          <app-hand-sketch [landmarks]="s.references[s.references.length - 1].normalizedLandmarks" [label]="'Mano registrada para ' + s.word" />
+        </div>
+      }
+    </form>
+
+    <app-camera-view (frame)="onFrame($event)" />
+  </div>
+</section>

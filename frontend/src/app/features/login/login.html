@@ -1,0 +1,23 @@
+<section class="card narrow">
+  <h1>Iniciar sesión</h1>
+  <p class="muted">Para el personal médico y los administradores. El paciente no necesita cuenta.</p>
+
+  <form (ngSubmit)="submit()" class="form">
+    <label>
+      Correo
+      <input type="email" name="email" [(ngModel)]="email" required autocomplete="username" />
+    </label>
+    <label>
+      Contraseña
+      <input type="password" name="password" [(ngModel)]="password" required autocomplete="current-password" />
+    </label>
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+    <button type="submit" class="primary" [disabled]="busy() || !email || !password">
+      {{ busy() ? 'Entrando…' : 'Entrar' }}
+    </button>
+  </form>
+
+  <p class="muted">¿Solo quieres ver qué señas reconoce el sistema? Consulta el <a routerLink="/vocabulario">vocabulario</a>.</p>
+</section>
