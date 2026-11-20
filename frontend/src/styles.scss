@@ -620,8 +620,6 @@ select {
 }
 
 .hand-sketch {
-  width: 100%;
-  height: 140px;
   // eje Y de imagen hacia abajo: igual que MediaPipe
   line {
     stroke: var(--accent);

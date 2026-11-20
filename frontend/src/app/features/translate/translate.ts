@@ -195,8 +195,14 @@ export class Translate implements OnInit, OnDestroy {
       this.noHands.set(false); // RF-14: el aviso desaparece de inmediato
     }
     const completed = this.detector.push(frame.hands);
-    if (completed) void this.handleSign(completed);
+    if (completed) {
+      void this.handleSign(completed);
+      requestAnimationFrame(() =>
+    console.info(`[SignLink] latencia ms: ${Math.round(performance.now() - frame.timestamp)}`),
+    );
+  }
     if (++this.frameCount % 5 === 0) this.updatePreview(frame);
+    
   }
 
   /** Indicador en vivo: la seña más parecida a la postura actual, aunque todavía no esté completada. */

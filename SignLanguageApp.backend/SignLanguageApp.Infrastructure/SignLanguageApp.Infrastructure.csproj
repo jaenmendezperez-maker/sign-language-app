@@ -22,6 +22,7 @@
   <ItemGroup>
     <!-- Señas de demostración: se generan con `npm run demo-signs` en frontend/ -->
     <EmbeddedResource Include="Persistence/Seed/demo-signs.json" LogicalName="SignLink.DemoSigns.json" />
+    <EmbeddedResource Include="Persistence\Seed\dataset-22-signs.json" LogicalName="SignLink.DatasetSigns.json" />
   </ItemGroup>
 
 </Project>

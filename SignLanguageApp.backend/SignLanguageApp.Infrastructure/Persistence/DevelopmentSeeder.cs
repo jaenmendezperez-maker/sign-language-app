@@ -40,6 +40,8 @@ public sealed class DevelopmentSeeder(AppDbContext db, IPasswordHasher hasher, I
 
         if (config.GetValue<bool>("Seed:DemoSigns") && !await db.Signs.AnyAsync(ct))
             await SeedDemoSignsAsync(ct);
+        if (config.GetValue<bool>("Seed:DatasetSigns"))
+            await SeedDatasetSignsAsync(ct);
     }
 
     private sealed record DemoSign(
@@ -67,6 +69,54 @@ public sealed class DevelopmentSeeder(AppDbContext db, IPasswordHasher hasher, I
         {
             var sign = Sign.Create(d.Word, category.Id, d.HandCount, null, admin.Id, now);
             sign.AddReference(d.Distances, d.Angles, d.NormalizedLandmarks, d.SampleCount, admin.Id, now);
+            db.Signs.Add(sign);
+        }
+        await db.SaveChangesAsync(ct);
+    }
+
+    private sealed record DatasetReference(
+        string Signer, double[] Distances, double[] Angles, double[] NormalizedLandmarks, short SampleCount);
+
+    private sealed record DatasetSign(
+        string Word, string Category, short HandCount, DatasetReference[] References);
+
+    /// <summary>Categorías que agrega el corpus de 22 señas además de las base.</summary>
+    private static readonly Dictionary<string, string> DatasetCategoryDescriptions = new()
+    {
+        ["Tiempo"] = "Ahora, hoy, cuándo…",
+        ["Preguntas"] = "Cómo, dónde…",
+        ["Personas"] = "Yo, tú, él…",
+        ["Verbos"] = "Comer, ir, querer, saber, tener…",
+    };
+
+    /// <summary>
+    /// Señas reales de LSM del corpus de 22 señas (Zenodo 23744039, CC BY 4.0), convertidas con
+    /// docs/importar_dataset_22.py. Cada seña trae una referencia por intérprete; el reconocedor
+    /// se queda con la más parecida. Es idempotente: solo agrega palabras que no existen.
+    /// </summary>
+    private async Task SeedDatasetSignsAsync(CancellationToken ct)
+    {
+        var admin = await db.Users.FirstOrDefaultAsync(u => u.Role == UserRole.Administrator, ct);
+        if (admin is null) return;
+
+        await using var stream = typeof(DevelopmentSeeder).Assembly.GetManifestResourceStream("SignLink.DatasetSigns.json")
+                                 ?? throw new InvalidOperationException("No se encontró dataset-22-signs.json embebido.");
+        var signs = await JsonSerializer.DeserializeAsync<DatasetSign[]>(stream, new JsonSerializerOptions(JsonSerializerDefaults.Web), ct) ?? [];
+
+        foreach (var name in signs.Select(s => s.Category).Distinct())
+            if (!await db.Categories.AnyAsync(c => c.Name == name, ct))
+                db.Categories.Add(Category.Create(name, DatasetCategoryDescriptions.GetValueOrDefault(name, "")));
+        await db.SaveChangesAsync(ct);
+
+        var categories = await db.Categories.ToDictionaryAsync(c => c.Name, c => c.Id, ct);
+        var existing = (await db.Signs.Select(s => s.Word).ToListAsync(ct)).ToHashSet();
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        foreach (var d in signs.Where(d => !existing.Contains(d.Word) && d.References.Length > 0))
+        {
+            var sign = Sign.Create(d.Word, categories[d.Category], d.HandCount, null, admin.Id, now);
+            foreach (var r in d.References)
+                sign.AddReference(r.Distances, r.Angles, r.NormalizedLandmarks, r.SampleCount, admin.Id, now);
             db.Signs.Add(sign);
         }
         await db.SaveChangesAsync(ct);
